@@ -19,14 +19,7 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         const recipientId = uuidv4();
         const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}`;
         const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px"/>`;
-        const mailOptions = {
-            from: adminEmail,
-            to,
-            cc,
-            bcc,
-            subject,
-            html,
-        };
+        const mailOptions = { from: adminEmail, to, cc, bcc, subject, html };
         await transporter.sendMail(mailOptions);
 
         // create an recipient
