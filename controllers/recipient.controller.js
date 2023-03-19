@@ -15,15 +15,17 @@ const transporter = nodemailer.createTransport({
 // to send email to user
 const sentEmailAndCreateRecipient = async (req, res) => {
     try {
-        const { adminEmail, recipient, subject, message } = req.body;
+        const { adminEmail, to, cc, bcc, subject, message } = req.body;
         const recipientId = uuidv4();
         const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}`;
-
+        const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px"/>`;
         const mailOptions = {
             from: adminEmail,
-            to: recipient,
-            subject: subject,
-            html: `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px"/>`,
+            to,
+            cc,
+            bcc,
+            subject,
+            html,
         };
         await transporter.sendMail(mailOptions);
 
@@ -33,7 +35,9 @@ const sentEmailAndCreateRecipient = async (req, res) => {
             status: "Sent",
             statusTime: new Date(),
             sentTime: new Date(),
-            recipient,
+            recipient: `${to}${cc && ", " + cc.split(",").join(", ")}${
+                bcc && ", " + bcc.split(",").join(", ")
+            }`,
             subject,
             message,
         });
@@ -61,7 +65,14 @@ const isOpen = async (req, res) => {
             from: process.env.ADMIN_EMAIL,
             to: process.env.ADMIN_EMAIL,
             subject: `Your Email is Opened.`,
-            html: `<div><p><strong>${recipient.recipient}</strong> has opened your email.</p>
+            html: `<div><p><strong>${
+                recipient.recipient?.split(",").length === 1
+                    ? recipient.recipient?.split(",")[0]
+                    : recipient.recipient?.split(",")[0] +
+                      "," +
+                      recipient.recipient?.split(",")[1] +
+                      ",...."
+            }</strong> has opened your email.</p>
                         <p><strong> Subject:</strong> ${recipient.subject}</p>
                         <p><strong> Message:</strong> ${recipient.message}</p>
                     </div>`,
