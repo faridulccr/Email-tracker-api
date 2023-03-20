@@ -21,19 +21,6 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         const ccEmails = cc.length > 0 ? cc.split(",") : [];
         const bccEmails = bcc.length > 0 ? bcc.split(",") : [];
         const allRecipients = [...toEmails, ...ccEmails, ...bccEmails];
-        const trackingUrl = `${
-            process.env.HOSTING_URL
-        }/recipient/is-open/${recipientId}?email=${allRecipients.join(",")}`;
-        const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px" alt="."/>`;
-        const mailOptions = {
-            from: adminEmail,
-            to: toEmails,
-            cc: ccEmails,
-            bcc: bccEmails,
-            subject,
-            html,
-        };
-        await transporter.sendMail(mailOptions);
 
         // create an recipient
         const newRecipient = new Recipient({
@@ -47,6 +34,24 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         });
         // to store newUser in mongoDB
         await newRecipient.save();
+
+        // send the email one by one
+        allRecipients.forEach((address, index) => {
+            setTimeout(async () => {
+                const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}?email=${address}`;
+                const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px" alt="."/>`;
+                const mailOptions = {
+                    from: adminEmail,
+                    to: address,
+                    // cc: ccEmails,
+                    // bcc: bccEmails,
+                    subject,
+                    html,
+                };
+                await transporter.sendMail(mailOptions);
+            }, index * 5000);
+        });
+
         // sending a response to front-end
         res.status(201).json(newRecipient);
     } catch (error) {
