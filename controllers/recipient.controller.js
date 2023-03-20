@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 // to send email to user
 const sentEmailAndCreateRecipient = async (req, res) => {
     try {
-        const { adminEmail, to, cc, bcc, subject, message } = req.body;
+        const { adminEmail, to, cc, bcc, subject, message, atOnce } = req.body;
         const recipientId = uuidv4();
         const toEmails = to.length > 0 ? to.split(",") : [];
         const ccEmails = cc.length > 0 ? cc.split(",") : [];
@@ -35,22 +35,38 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         // to store newUser in mongoDB
         await newRecipient.save();
 
-        // send the email one by one
-        allRecipients.forEach((address, index) => {
-            setTimeout(async () => {
-                const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}?email=${address}`;
-                const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px" alt="."/>`;
-                const mailOptions = {
-                    from: adminEmail,
-                    to: address,
-                    // cc: ccEmails,
-                    // bcc: bccEmails,
-                    subject,
-                    html,
-                };
-                await transporter.sendMail(mailOptions);
-            }, index * 5000);
-        });
+        // send the email
+        if (atOnce) {
+            // send the email at once
+            const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}`;
+            const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px" alt="."/>`;
+            const mailOptions = {
+                from: adminEmail,
+                to: toEmails,
+                cc: ccEmails,
+                bcc: bccEmails,
+                subject,
+                html,
+            };
+            await transporter.sendMail(mailOptions);
+        } else {
+            // send the email one by one
+            allRecipients.forEach((address, index) => {
+                setTimeout(async () => {
+                    const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}?email=${address}`;
+                    const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px" alt="."/>`;
+                    const mailOptions = {
+                        from: adminEmail,
+                        to: address,
+                        // cc: ccEmails,
+                        // bcc: bccEmails,
+                        subject,
+                        html,
+                    };
+                    await transporter.sendMail(mailOptions);
+                }, index * 5000);
+            });
+        }
 
         // sending a response to front-end
         res.status(201).json(newRecipient);
@@ -74,7 +90,9 @@ const isOpen = async (req, res) => {
             from: process.env.ADMIN_EMAIL,
             to: process.env.ADMIN_EMAIL,
             subject: `Your Email is Opened.`,
-            html: `<div><p><strong>${req.query.email}</strong> has opened your email.</p>
+            html: `<div><p><strong>${
+                req?.query?.email || "One Recipient"
+            }</strong> has opened your email.</p>
                         <p><strong> Subject:</strong> ${recipient.subject}</p>
                         <p><strong> Message:</strong> ${recipient.message}</p>
                     </div>`,
