@@ -41,7 +41,7 @@ const sentEmailAndCreateRecipient = async (req, res) => {
             status: "Sent",
             statusTime: new Date(),
             sentTime: new Date(),
-            recipient: `${allRecipients.join(",")}`,
+            recipient: `${allRecipients.join(", ")}`,
             subject,
             message,
         });
