@@ -19,7 +19,14 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         const recipientId = uuidv4();
         const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}`;
         const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px"/>`;
-        const mailOptions = { from: adminEmail, to, cc, bcc, subject, html };
+        const mailOptions = {
+            from: adminEmail,
+            to,
+            cc: cc.length > 0 ? cc.split(",") : [],
+            bcc: bcc.length > 0 ? cc.split(",") : [],
+            subject,
+            html,
+        };
         await transporter.sendMail(mailOptions);
 
         // create an recipient
@@ -28,9 +35,9 @@ const sentEmailAndCreateRecipient = async (req, res) => {
             status: "Sent",
             statusTime: new Date(),
             sentTime: new Date(),
-            recipient: `${to}${cc && ", " + cc.split(",").join(", ")}${
-                bcc && ", " + bcc.split(",").join(", ")
-            }`,
+            recipient: `${to}${
+                cc.length > 0 && ", " + cc.split(",").join(", ")
+            }${bcc.length > 0 && ", " + bcc.split(",").join(", ")}`,
             subject,
             message,
         });
