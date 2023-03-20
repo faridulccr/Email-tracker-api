@@ -60,19 +60,19 @@ const isOpen = async (req, res) => {
         // to restore the user to mongoDB
         await recipient.save();
         // console.log(recipient);
+        const emailAddresses = recipient.recipient.split(",");
 
         const mailOptions = {
             from: process.env.ADMIN_EMAIL,
             to: process.env.ADMIN_EMAIL,
             subject: `Your Email is Opened.`,
             html: `<div><p><strong>${
-                recipient.recipient?.split(",").length === 1
-                    ? recipient.recipient?.split(",")[0]
-                    : recipient.recipient?.split(",")[0] +
-                      "," +
-                      recipient.recipient?.split(",")[1] +
-                      ",...."
-            }</strong> has opened your email.</p>
+                emailAddresses.length < 2
+                    ? emailAddresses[0]
+                    : `${emailAddresses[0]},${emailAddresses[1].trim()},.....`
+            }</strong> ${
+                emailAddresses.length < 2 ? "has" : "have"
+            } opened your email.</p>
                         <p><strong> Subject:</strong> ${recipient.subject}</p>
                         <p><strong> Message:</strong> ${recipient.message}</p>
                     </div>`,
