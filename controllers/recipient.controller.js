@@ -17,13 +17,19 @@ const sentEmailAndCreateRecipient = async (req, res) => {
     try {
         const { adminEmail, to, cc, bcc, subject, message } = req.body;
         const recipientId = uuidv4();
-        const trackingUrl = `${process.env.HOSTING_URL}/recipient/is-open/${recipientId}`;
-        const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px"/>`;
+        const toEmails = to.length > 0 ? to.split(",") : [];
+        const ccEmails = cc.length > 0 ? cc.split(",") : [];
+        const bccEmails = bcc.length > 0 ? cc.split(",") : [];
+        const allRecipients = [...toEmails, ...ccEmails, ...bccEmails];
+        const trackingUrl = `${
+            process.env.HOSTING_URL
+        }/recipient/is-open/${recipientId}?email=${allRecipients.join(",")}`;
+        const html = `<p>${message}</p><img src=${trackingUrl} width="1px" height="1px" alt="."/>`;
         const mailOptions = {
             from: adminEmail,
-            to,
-            cc: cc.length > 0 ? cc.split(",") : [],
-            bcc: bcc.length > 0 ? cc.split(",") : [],
+            to: toEmails,
+            cc: ccEmails,
+            bcc: bccEmails,
             subject,
             html,
         };
@@ -35,9 +41,7 @@ const sentEmailAndCreateRecipient = async (req, res) => {
             status: "Sent",
             statusTime: new Date(),
             sentTime: new Date(),
-            recipient: `${to}${
-                cc.length > 0 && ", " + cc.split(",").join(", ")
-            }${bcc.length > 0 && ", " + bcc.split(",").join(", ")}`,
+            recipient: `${allRecipients.join(",")}`,
             subject,
             message,
         });
@@ -46,7 +50,7 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         // sending a response to front-end
         res.status(201).json(newRecipient);
     } catch (error) {
-        console.log(error.message);
+        // console.log(error.message);
         res.status(500).send({ error: "There is an error" });
     }
 };
@@ -60,19 +64,12 @@ const isOpen = async (req, res) => {
         // to restore the user to mongoDB
         await recipient.save();
         // console.log(recipient);
-        const emailAddresses = recipient.recipient.split(",");
 
         const mailOptions = {
             from: process.env.ADMIN_EMAIL,
             to: process.env.ADMIN_EMAIL,
             subject: `Your Email is Opened.`,
-            html: `<div><p><strong>${
-                emailAddresses.length < 2
-                    ? emailAddresses[0]
-                    : `${emailAddresses[0]},${emailAddresses[1].trim()},.....`
-            }</strong> ${
-                emailAddresses.length < 2 ? "has" : "have"
-            } opened your email.</p>
+            html: `<div><p><strong>${req.query.email}</strong> has opened your email.</p>
                         <p><strong> Subject:</strong> ${recipient.subject}</p>
                         <p><strong> Message:</strong> ${recipient.message}</p>
                     </div>`,
