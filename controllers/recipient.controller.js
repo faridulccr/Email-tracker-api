@@ -19,7 +19,7 @@ const sentEmailAndCreateRecipient = async (req, res) => {
         const recipientId = uuidv4();
         const toEmails = to.length > 0 ? to.split(",") : [];
         const ccEmails = cc.length > 0 ? cc.split(",") : [];
-        const bccEmails = bcc.length > 0 ? cc.split(",") : [];
+        const bccEmails = bcc.length > 0 ? bcc.split(",") : [];
         const allRecipients = [...toEmails, ...ccEmails, ...bccEmails];
         const trackingUrl = `${
             process.env.HOSTING_URL
